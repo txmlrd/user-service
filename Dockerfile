@@ -7,11 +7,11 @@ WORKDIR /app
 # Copy semua file
 COPY . .
 
-# Install dependency
+# Install dependency Python
 RUN pip install -r requirements.txt
 
-# Jalankan database.py untuk create tabel terlebih dahulu
-RUN python app/database.py
+# Install netcat buat cek koneksi DB
+RUN apt-get update && apt-get install -y netcat-openbsd
 
-# Jalankan Flask app
+# Default command kalau nggak override dari docker-compose
 CMD ["python", "app/app.py"]

@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Step 2: Establish a database connection
-database_url = f'mysql+pymysql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}'
+database_url = f"mysql+pymysql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
+
 engine = create_engine(database_url)  # Create the engine instance
 
 # Define base class

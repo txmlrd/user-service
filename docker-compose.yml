@@ -9,10 +9,17 @@ services:
       - SECRET_KEY=gungadhisanjaya
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=rootpassword # Menambahkan password untuk user
+      - DB_PASSWORD=rootpassword
       - DB_NAME=user_service
     depends_on:
       - db
+    command: >
+      sh -c "
+        echo 'Menunggu MySQL...';
+        while ! nc -z db 3306; do sleep 1; done;
+        echo 'MySQL siap!';
+        python app/database.py && python app/app.py
+      "
 
   db:
     image: mysql:8.0

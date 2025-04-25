@@ -26,8 +26,8 @@ class User(db.Model):
     password = db.Column(db.String(100), nullable=False)
     role_id = db.Column(db.Integer, nullable=False, default=1)
     is_verified = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.datetime)
-    updated_at = db.Column(db.DateTime, default=datetime.datetime, onupdate=datetime.datetime)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
 # Endpoint dashboard
 @app.route('/dashboard')
@@ -90,4 +90,4 @@ def logout():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
