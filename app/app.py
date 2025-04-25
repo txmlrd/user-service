@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, session
+from flask import Flask, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 import datetime
@@ -29,12 +29,26 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
-# Endpoint dashboard
-@app.route('/dashboard')
-def dashboard():
+# Endpoint profile
+@app.route('/profile')
+def profile():
     if 'user_id' in session:
-        return f"Welcome user ID: {session['user_id']}, your name is {User.query.get(session['user_id']).name}, role ID: {User.query.get(session['user_id']).role_id}, verified: {User.query.get(session['user_id']).is_verified}, created at: {User.query.get(session['user_id']).created_at}, updated at: {User.query.get(session['user_id']).updated_at}"
-    return "Unauthorized", 401
+        user = User.query.get(session['user_id'])
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        user_data = {
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'role_id': user.role_id,
+            'is_verified': user.is_verified,
+            'created_at': user.created_at.isoformat(),
+            'updated_at': user.updated_at.isoformat()
+        }
+        return jsonify(user_data)
+
+    return jsonify({'error': 'Unauthorized'}), 401
 
 # Endpoint register
 @app.route('/register', methods=['POST'])
@@ -74,9 +88,56 @@ def login():
 
     if user and bcrypt.check_password_hash(user.password, password):
         session['user_id'] = user.id
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('profile'))
     else:
         return "Invalid credentials", 401
+
+@app.route('/update', methods=['POST'])
+def update_profile():
+    if 'user_id' not in session:
+        return "Unauthorized", 401
+
+    user_id = session['user_id']
+    user = User.query.get_or_404(user_id)
+    
+    data = request.form  # atau request.json kalo kirim JSON
+    user.name = data.get('name', user.name)  # fallback ke nama lama kalau kosong
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "Profile updated successfully",
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role_id": user.role_id,
+                "is_verified": user.is_verified,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at
+            }
+        }), 200
+    except:
+        db.session.rollback()
+        return "Failed to update profile", 500
+
+@app.route('/delete/<int:id>', methods=['DELETE'])
+def delete_profile(id):
+    if 'user_id' not in session:
+        return "Unauthorized", 401
+
+    if session['user_id'] != id:
+        return "Forbidden: You can only delete your own profile", 403
+
+    user = User.query.get_or_404(id)
+    
+    db.session.delete(user)
+    db.session.commit()
+    session.clear()
+    
+    return "Profile deleted successfully", 200
+
+    
 
 @app.route('/logout')
 def logout():
