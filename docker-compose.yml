@@ -15,11 +15,13 @@ services:
       - db
     command: >
       sh -c "
-        echo 'Menunggu MySQL...';
+        echo 'Waiting for MySQL to be ready';
         while ! nc -z db 3306; do sleep 1; done;
-        echo 'MySQL siap!';
+        echo 'MySQL ready';
         python app/database.py && python app/app.py
       "
+    volumes:
+      - .:/app
 
   db:
     image: mysql:8.0
