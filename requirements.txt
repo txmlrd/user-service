@@ -1,7 +1,9 @@
 Flask
 Flask-SQLAlchemy
 Flask-Bcrypt
+Flask-Mail
 python-dotenv
 PyMySQL
 Werkzeug
 cryptography
+itsdangerous

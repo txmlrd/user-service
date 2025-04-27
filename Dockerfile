@@ -1,17 +1,21 @@
 # Gunakan image Python
-FROM python:3.10
+FROM python:3.10-slim
+
+ENV PYTHONPATH=/app
 
 # Set work directory
 WORKDIR /app
 
-# Copy semua file
+# Install netcat dan clean up cache
+RUN apt-get update && apt-get install -y --no-install-recommends netcat-openbsd && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy semua file ke dalam container
 COPY . .
 
 # Install dependency Python
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install netcat buat cek koneksi DB
-RUN apt-get update && apt-get install -y netcat-openbsd
-
-# Default command kalau nggak override dari docker-compose
-CMD ["python", "app/app.py"]
+# Default command
+CMD ["python","app/run.py"]

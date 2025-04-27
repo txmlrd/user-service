@@ -15,11 +15,10 @@ services:
       - db
     command: >
       sh -c "
-        echo 'Waiting for MySQL to be ready';
-        while ! nc -z db 3306; do sleep 1; done;
-        echo 'MySQL ready';
-        python app/database.py && python app/app.py
-      "
+      echo 'Waiting for MySQL to be ready';
+      while ! nc -z db 3306; do sleep 1; done;
+      echo 'MySQL ready';
+      python app/run.py"
     volumes:
       - .:/app
 
