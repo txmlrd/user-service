@@ -3,7 +3,7 @@ services:
   user_service:
     build: .
     ports:
-      - "5000:5000"
+      - "5001:5001"
     environment:
       - FLASK_ENV=development
       - SECRET_KEY=gungadhisanjaya
@@ -29,4 +29,4 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: user_service
     ports:
-      - "3306:3306"
+      - "3308:3306"
