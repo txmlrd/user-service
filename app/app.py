@@ -1,5 +1,5 @@
 from flask import Flask
-from extensions import db, bcrypt, mail
+from extensions import db, bcrypt, mail, migrate
 from config import Config
 from routes.auth import auth_bp
 from routes.user import user_bp
@@ -10,6 +10,7 @@ def create_app():
     app.config.from_object(Config)
 
     db.init_app(app)
+    migrate.init_app(app, db)
     bcrypt.init_app(app)
     mail.init_app(app)
 

@@ -7,3 +7,4 @@ PyMySQL
 Werkzeug
 cryptography
 itsdangerous
+flask_migrate 
