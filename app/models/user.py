@@ -14,3 +14,4 @@ class User(db.Model):
     is_verified = db.Column(db.Boolean, default=False)  # lebih baik pakai Boolean
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+

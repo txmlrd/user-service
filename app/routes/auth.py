@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify, session, redirect, url_for, render_template
-from models.user import User
-from extensions import db, bcrypt
-from utils.mailer import send_email
-from utils.serializer import get_serializer
+from app.models.user import User
+from app.extensions import db, bcrypt, create_access_token, jwt_required, get_jwt_identity
+from app.utils.mailer import send_email
+from app.utils.serializer import get_serializer
+from app.security.redis_handler import blacklist_token, is_token_blacklisted
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -58,18 +59,31 @@ def login():
     if user and bcrypt.check_password_hash(user.password, password):
         if not user.is_verified:
             return "Please verify your email before logging in.", 401
-        session['user_id'] = user.id
-        return redirect(url_for('user.profile'))
+        access_token = create_access_token(identity=str(user.id))
+        return jsonify(access_token=access_token), 200
     return "Invalid credentials", 401
 
 # Logout
 @auth_bp.route('/logout')
+@jwt_required()
 def logout():
-    if session.get('user_id') is None:
-        return "Already logged out", 400
-    session.clear()
-    return "Logged out successfully", 200
-
+    # Ambil token JWT dari header Authorization
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        jwt_token = auth_header.split(" ")[1]  # Ambil token dari "Bearer <token>"
+        print("JWT Token:", jwt_token)  # Debug: Print token
+        
+        # Cek apakah token sudah diblacklist
+        if is_token_blacklisted(jwt_token):
+            return jsonify({"msg": "Token has already been blacklisted. You are already logged out."}), 400
+        
+        # Jika token belum diblacklist, maka blacklist token
+        blacklist_token(jwt_token)  # Menambahkan token ke blacklist
+        return jsonify({"msg": "Successfully logged out"}), 200
+    else:
+        return jsonify({"msg": "Authorization token missing or invalid"}), 400
+    
+    
 # Forgot Password
 @auth_bp.route('/reset-password/request', methods=['POST'])
 def forgot_password():

@@ -1,16 +1,19 @@
 from flask import Blueprint, session, jsonify, request
-from models.user import User
+from app.models.user import User
+from app.extensions import jwt_required, get_jwt_identity
+from app.security.token_checker import check_token_blacklisted
 from app import db
 
 user_bp = Blueprint('user', __name__)
 
 # Profile
 @user_bp.route('/profile')
+@jwt_required()
+@check_token_blacklisted
 def profile():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
 
-    user = User.query.get(session['user_id'])
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
