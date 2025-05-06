@@ -1,7 +1,6 @@
 from flask import Blueprint, session, jsonify, request
 from app.models.user import User
 from app.extensions import jwt_required, get_jwt_identity
-from app.security.token_checker import check_token_blacklisted
 from app import db
 
 user_bp = Blueprint('user', __name__)
@@ -9,7 +8,6 @@ user_bp = Blueprint('user', __name__)
 # Profile
 @user_bp.route('/profile')
 @jwt_required()
-@check_token_blacklisted
 def profile():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)

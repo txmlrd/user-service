@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify, session, redirect, url_for, render_template
+from flask import Blueprint, request, jsonify, url_for, render_template
 from app.models.user import User
-from app.extensions import db, bcrypt, create_access_token, jwt_required, get_jwt_identity
+from app.extensions import db, bcrypt, create_access_token, jwt_required
 from app.utils.mailer import send_email
 from app.utils.serializer import get_serializer
-from app.security.redis_handler import blacklist_token, is_token_blacklisted
+from app.security.redis_handler import blacklist_token
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -67,21 +67,12 @@ def login():
 @auth_bp.route('/logout')
 @jwt_required()
 def logout():
-    # Ambil token JWT dari header Authorization
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
-        jwt_token = auth_header.split(" ")[1]  # Ambil token dari "Bearer <token>"
-        print("JWT Token:", jwt_token)  # Debug: Print token
-        
-        # Cek apakah token sudah diblacklist
-        if is_token_blacklisted(jwt_token):
-            return jsonify({"msg": "Token has already been blacklisted. You are already logged out."}), 400
-        
-        # Jika token belum diblacklist, maka blacklist token
-        blacklist_token(jwt_token)  # Menambahkan token ke blacklist
+        jwt_token = auth_header.split(" ")[1]
+        blacklist_token(jwt_token)
         return jsonify({"msg": "Successfully logged out"}), 200
-    else:
-        return jsonify({"msg": "Authorization token missing or invalid"}), 400
+    return jsonify({"msg": "Authorization token missing or invalid"}), 400
     
     
 # Forgot Password

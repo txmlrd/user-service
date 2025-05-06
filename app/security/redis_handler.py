@@ -18,12 +18,6 @@ def blacklist_token(jwt_token):
     except Exception as e:
         raise ValueError(f"Failed to decode token: {str(e)}")
 
-# Fungsi untuk mengecek apakah token diblacklist
-def is_token_blacklisted(jwt_token):
-    try:
-        decoded_token = decode_token(jwt_token)
-        jti = decoded_token.get('jti')
-        return redis_client.exists(f"blacklist_{jti}") if jti else False
-    except Exception:
-        return False
-
+# Fungsi untuk cek blacklist via JTI (dipakai JWTManager)
+def is_token_blacklisted_by_jti(jti):
+    return redis_client.exists(f"blacklist_{jti}") == 1
