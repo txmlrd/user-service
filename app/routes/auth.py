@@ -90,28 +90,27 @@ def forgot_password():
 
     return "Reset password link sent", 200
 
-# Reset Password
 @auth_bp.route('/reset-password/confirm/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     try:
         email = get_serializer().loads(token, salt='password-reset', max_age=3600)
     except Exception:
-        return "Invalid or expired token", 400
+        return render_template("reset_password.html", error="Invalid or expired token")
 
-    user = User.query.filter_by(email=email).first_or_404()
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return render_template("reset_password.html", error="User not found")
 
     if request.method == 'POST':
         new_password = request.form.get('password')
         if not new_password:
-            return "Password is required", 400
+            return render_template("reset_password.html", error="Password is required")
         hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
         user.password = hashed_password
         db.session.commit()
-        return "Password updated successfully", 200
+        return render_template("reset_password.html", success=True)
 
-    return '''
-        <form method="POST">
-            New Password: <input type="password" name="password" required><br>
-            <button type="submit">Reset Password</button>
-        </form>
-    '''
+    # Jika GET
+    return render_template("reset_password.html")
+
+
