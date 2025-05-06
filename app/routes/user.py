@@ -28,11 +28,11 @@ def profile():
 
 # Update Profile
 @user_bp.route('/update', methods=['POST'])
+@jwt_required()
 def update_profile():
-    if 'user_id' not in session:
-        return "Unauthorized", 401
-
-    user = User.query.get_or_404(session['user_id'])
+    current_user_id = get_jwt_identity()
+    
+    user = User.query.get(current_user_id)
     data = request.form
     user.name = data.get('name', user.name)
 
@@ -54,19 +54,18 @@ def update_profile():
         db.session.rollback()
         return "Failed to update profile", 500
 
-# Delete Profile
-@user_bp.route('/delete/<int:id>', methods=['DELETE'])
-def delete_profile(id):
-    if 'user_id' not in session:
-        return "Unauthorized", 401
 
-    if session['user_id'] != id:
-        return "Forbidden", 403
+@user_bp.route('/delete/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_profile(id):
+    current_user_id = get_jwt_identity()
+
+    if int(current_user_id) != id:
+        return jsonify({'error': 'Forbidden'}), 403
 
     user = User.query.get_or_404(id)
 
     db.session.delete(user)
     db.session.commit()
-    session.clear()
 
-    return "Profile deleted successfully", 200
+    return jsonify({'msg': 'Profile deleted successfully'}), 200
