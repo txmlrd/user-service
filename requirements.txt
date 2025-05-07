@@ -8,4 +8,4 @@ Werkzeug
 cryptography
 itsdangerous
 flask_migrate
-Flask-JWT-Extended  
+Flask-JWT-Extended

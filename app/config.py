@@ -23,4 +23,4 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 3600))  # 1 hour
     JWT_REFRESH_TOKEN_EXPIRES = int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES', 86400))  # 24 hours
     
-    REDIS_URL = os.environ.get('REDIS_URL')
+    # REDIS_URL = os.environ.get('REDIS_URL')
