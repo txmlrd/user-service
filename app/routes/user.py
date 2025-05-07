@@ -2,12 +2,14 @@ from flask import Blueprint, session, jsonify, request
 from app.models.user import User
 from app.extensions import jwt_required, get_jwt_identity
 from app import db
+from app.security.check_device import check_device_token
 
 user_bp = Blueprint('user', __name__)
 
 # Profile
 @user_bp.route('/profile')
 @jwt_required()
+@check_device_token
 def profile():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
@@ -29,12 +31,14 @@ def profile():
 # Update Profile
 @user_bp.route('/update', methods=['POST'])
 @jwt_required()
+@check_device_token
 def update_profile():
     current_user_id = get_jwt_identity()
     
     user = User.query.get(current_user_id)
     data = request.form
     user.name = data.get('name', user.name)
+    user.phone = data.get('phone', user.phone)
 
     try:
         db.session.commit()
@@ -43,6 +47,8 @@ def update_profile():
             "user": {
                 "id": user.id,
                 "name": user.name,
+                "phone": user.phone,
+                "profile_picture": user.profile_picture,
                 "email": user.email,
                 "role_id": user.role_id,
                 "is_verified": user.is_verified,
@@ -57,6 +63,7 @@ def update_profile():
 
 @user_bp.route('/delete/<int:id>', methods=['DELETE'])
 @jwt_required()
+@check_device_token
 def delete_profile(id):
     current_user_id = get_jwt_identity()
 

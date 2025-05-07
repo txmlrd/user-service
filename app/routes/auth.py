@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify, url_for, render_template
 from app.models.user import User
-from app.extensions import db, bcrypt, create_access_token, jwt_required
+from app.extensions import db, bcrypt, create_access_token, jwt_required, decode_token, redis_client, get_jwt_identity
 from app.utils.mailer import send_email
 from app.utils.serializer import get_serializer
 from app.security.redis_handler import blacklist_token
+from app.security.check_device import check_device_token
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -60,17 +61,28 @@ def login():
         if not user.is_verified:
             return "Please verify your email before logging in.", 401
         access_token = create_access_token(identity=str(user.id))
+        
+        jti = decode_token(access_token)['jti']
+
+        redis_client.setex(f"user_active_token:{user.id}", 3600, jti)
+        
         return jsonify(access_token=access_token), 200
     return "Invalid credentials", 401
 
 # Logout
 @auth_bp.route('/logout')
 @jwt_required()
+@check_device_token
 def logout():
+    user = get_jwt_identity()
+    user_id = user['sub']
+    
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         jwt_token = auth_header.split(" ")[1]
         blacklist_token(jwt_token)
+        redis_client.delete(f"user_active_token:{user_id}")
+
         return jsonify({"msg": "Successfully logged out"}), 200
     return jsonify({"msg": "Authorization token missing or invalid"}), 400
     
