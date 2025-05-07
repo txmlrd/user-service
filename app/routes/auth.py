@@ -30,11 +30,12 @@ def register():
     confirm_url = url_for('auth.confirm_email', token=token, _external=True)
     html = render_template('email_confirmation.html', name=name, confirm_url=confirm_url)
     send_email('Confirm Your Email', email, html=html)
+    
+    return jsonify({"message": "User registered, please check email"}), 201
 
-    return "User registered successfully. Please check your email.", 201
 
 # Confirm Email
-@auth_bp.route('/confirm/<token>')
+@auth_bp.route('/verify-email/<token>')
 def confirm_email(token):
     try:
         email = get_serializer().loads(token, salt='email-confirm', max_age=3600)
@@ -71,20 +72,9 @@ def login():
 def logout():
     try :
         user = get_jwt_identity()
-        return user, 200
+        return jsonify({"user_id": user}), 200
     except Exception as e:
         return jsonify({"msg": "Token is invalid"}), 401
-    
-    # user_id = user['sub']
-    
-    # auth_header = request.headers.get("Authorization", "")
-    # if auth_header.startswith("Bearer "):
-    #     jwt_token = auth_header.split(" ")[1]
-    #     blacklist_token(jwt_token)
-    #     redis_client.delete(f"user_active_token:{user_id}")
-
-    #     return jsonify({"msg": "Successfully logged out"}), 200
-    # return jsonify({"msg": "Authorization token missing or invalid"}), 400
     
     
 # Forgot Password
@@ -100,7 +90,7 @@ def forgot_password():
     reset_url = url_for('auth.reset_password', token=token, _external=True)
     send_email('Reset Your Password', email, body=f'Klik link berikut untuk reset password: {reset_url}')
 
-    return "Reset password link sent", 200
+    return jsonify({"msg": "Reset password request success, please check your email!"}), 200
 
 @auth_bp.route('/reset-password/confirm/<token>', methods=['GET', 'POST'])
 def reset_password(token):

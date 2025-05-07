@@ -18,6 +18,8 @@ def profile():
     user_data = {
         'id': user.id,
         'name': user.name,
+        'phone': user.phone,
+        'profile_picture': user.profile_picture,
         'email': user.email,
         'role_id': user.role_id,
         'is_verified': user.is_verified,
