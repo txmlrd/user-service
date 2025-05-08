@@ -1,12 +1,6 @@
 version: "3.8"
 services:
-
-  # redis:
-  #   image: redis:latest
-  #   container_name: redis
-  #   ports:
-  #     - "6379:6379"
-  user_service:
+  user-service:
     build: .
     ports:
       - "5001:5001"
@@ -27,6 +21,8 @@ services:
       python app/run.py"
     volumes:
       - .:/app
+    networks:
+      - microservice-net  # <--- tambahkan ini
 
   db:
     image: mysql:8.0
@@ -37,7 +33,13 @@ services:
     ports:
       - "3308:3306"
     volumes:
-      - mysql-data:/var/lib/mysql # Menambahkan volume persisten untuk MySQL
+      - mysql-data:/var/lib/mysql
+    networks:
+      - microservice-net  # <--- tambahkan ini
 
 volumes:
   mysql-data:
+
+networks:
+  microservice-net:
+    external: true

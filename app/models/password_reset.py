@@ -5,6 +5,7 @@ class PasswordReset(db.Model):
     __tablename__ = 'password_resets'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)  # bisa tambahin ForeignKey ke users.id kalau mau
+    user_id = db.Column(db.Integer, nullable=False)
     token = db.Column(db.String(100), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

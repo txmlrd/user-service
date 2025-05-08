@@ -3,6 +3,8 @@ from .extensions import db, bcrypt, mail, migrate, jwt
 from .config import Config
 from .routes.auth import auth_bp
 from .routes.user import user_bp
+from .models.user import User
+from .models.password_reset import PasswordReset
 
 
 def create_app():
