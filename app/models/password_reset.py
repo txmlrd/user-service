@@ -9,3 +9,4 @@ class PasswordReset(db.Model):
     token = db.Column(db.String(100), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_reset = db.Column(db.Boolean, default=False)

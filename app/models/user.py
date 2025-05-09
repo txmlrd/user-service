@@ -1,10 +1,12 @@
 from app import db
 from datetime import datetime
+import uuid
 
 class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(36), unique=True, nullable=False, default=str(uuid.uuid4())) 
     name = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=True) 
     profile_picture = db.Column(db.String(100), nullable=True) 

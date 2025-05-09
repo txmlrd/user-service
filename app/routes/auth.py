@@ -7,6 +7,7 @@ from app.models.password_reset import PasswordReset
 from datetime import datetime, timedelta
 import requests
 from werkzeug.utils import secure_filename
+from app.functions.get_user_requests_password import get_user_request_password
 # from app.security.redis_handler import blacklist_token
 # from app.security.check_device import check_device_token
 
@@ -81,69 +82,7 @@ def confirm_email(token):
     user.is_verified = 1
     db.session.commit()
     return jsonify({"msg": "Email verified successfully"}), 200
-
-# # Login
-# @auth_bp.route('/login', methods=['POST'])
-# def login():
-#     data = request.form
-#     email, password = data.get('email'), data.get('password')
-
-#     user = User.query.filter_by(email=email).first()
-
-#     if user and bcrypt.check_password_hash(user.password, password):
-#         if not user.is_verified:
-#             return "Please verify your email before logging in.", 401
-#         access_token = create_access_token(identity=str(user.id))
-#         return jsonify(access_token=access_token), 200
-#     return "Invalid credentials", 401
-
-# @auth_bp.route('/login/face', methods=['POST'])
-# def login_face():
-#     data = request.form
-#     email = data.get('email')
-#     face = request.files.get('face_image')
     
-#     if not email or not face:
-#         return "All fields are required", 400
-
-#     # Cari user berdasarkan username atau email
-#     user = User.query.filter((User.email == email)).first()
-#     if not user:
-#         return "User not found", 404
-
-#     user_id = user.id
-
-#     # Kirim ke Face Recognition Service
-#     filename = secure_filename(face.filename)
-#     files = {'image': (filename, face.stream, face.mimetype)}
-#     payload = {'user_id': user_id}
-    
-#     try:
-#         response = requests.post("http://face-recognition:5000/verify", data=payload, files=files)
-        
-#         if response.status_code == 200:
-#             access_token = create_access_token(identity=str(user_id))
-#             return jsonify(access_token=access_token), 200
-#         else:
-#             return jsonify({"error": "Face recognition failed", "details": response.json()}), 401
-
-#     except requests.exceptions.RequestException as e:
-#         return jsonify({"error": "Face Recognition Service unavailable", "details": str(e)}), 503
-
-
-# # Logout
-# @auth_bp.route('/logout', methods=['GET'])
-# @jwt_required() 
-# # @check_device_token
-# def logout():
-#     try :
-#         user = get_jwt_identity()
-#         return jsonify({"user_id": user}), 200
-#     except Exception as e:
-#         return jsonify({"msg": "Token is invalid"}), 401
-    
-    
-# Forgot Password
 @auth_bp.route('/reset-password/request', methods=['POST'])
 def forgot_password():
     email = request.form.get('email')
@@ -152,17 +91,36 @@ def forgot_password():
     if user is None:
         return jsonify({"msg": "Email not found"}), 404
 
+    check_token, status = get_user_request_password(user.id)
+    
+    if status == 200:
+        minutes_left = int((check_token.expires_at - datetime.utcnow()).total_seconds()) // 60
+        reset_url = url_for('auth.reset_password', token=check_token.token, _external=True)
+        send_email(
+            'Reset Your Password',
+            email,
+            body=f'Link masih berlaku sekitar {minutes_left} menit.\nKlik link berikut untuk reset password: {reset_url}'
+        )
+        return jsonify({"msg": "Reset password link resent, please check your email!"}), 200
+
+    # Token expired atau tidak ditemukan → buat baru
     token = get_serializer().dumps(email, salt='password-reset')
     reset_url = url_for('auth.reset_password', token=token, _external=True)
     send_email('Reset Your Password', email, body=f'Klik link berikut untuk reset password: {reset_url}')
-    
-    created_at = datetime.utcnow()
-    expires_at = datetime.utcnow() + timedelta(minutes=15)
-    save_token = PasswordReset(user_id=user.id, token=token, expires_at=expires_at, created_at=created_at)
+
+    now = datetime.utcnow()
+    save_token = PasswordReset(
+        user_id=user.id,
+        token=token,
+        created_at=now,
+        expires_at=now + timedelta(minutes=15),
+        is_reset=False
+    )
     db.session.add(save_token)
     db.session.commit()
-    
+
     return jsonify({"msg": "Reset password request success, please check your email!"}), 200
+
 
 @auth_bp.route('/reset-password/confirm/<token>', methods=['GET', 'POST'])
 def reset_password(token):
@@ -172,19 +130,26 @@ def reset_password(token):
         return render_template("reset_password.html", error="Invalid or expired token")
 
     user = User.query.filter_by(email=email).first()
+    user_token = PasswordReset.query.filter_by(token=token).first()
     if not user:
         return render_template("reset_password.html", error="User not found")
-
+    
     if request.method == 'POST':
         new_password = request.form.get('password')
         if not new_password:
             return render_template("reset_password.html", error="Password is required")
         hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
         user.password = hashed_password
-        db.session.commit()
+        user_token.is_reset = True
+        db.session.commit()  
         return render_template("reset_password.html", success=True)
 
-    # Jika GET
+
+    if user_token.is_reset == True:
+        return render_template("reset_password.html", already_used=True)
+    
+    if user_token.expires_at < datetime.utcnow():
+        return render_template("reset_password.html", expired=True)
     return render_template("reset_password.html")
 
 

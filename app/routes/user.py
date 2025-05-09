@@ -17,12 +17,14 @@ def profile():
 
     user_data = {
         'id': user.id,
+        'uuid': user.uuid,
         'name': user.name,
         'phone': user.phone,
         'profile_picture': user.profile_picture,
         'email': user.email,
         'role_id': user.role_id,
         'is_verified': user.is_verified,
+        'face_model_preference': user.face_model_preference,
         'created_at': user.created_at.isoformat(),
         'updated_at': user.updated_at.isoformat()
     }
@@ -46,9 +48,11 @@ def update_profile():
             "message": "Profile updated successfully",
             "user": {
                 "id": user.id,
+                "uuid": user.uuid,
                 "name": user.name,
                 "phone": user.phone,
                 "profile_picture": user.profile_picture,
+                "face_model_preference": user.face_model_preference,
                 "email": user.email,
                 "role_id": user.role_id,
                 "is_verified": user.is_verified,

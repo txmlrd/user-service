@@ -1,4 +1,5 @@
 from app.models.user import User
+from app.models.password_reset import PasswordReset
 from flask import Blueprint, request, jsonify
 
 internal_bp = Blueprint('internal', __name__)
@@ -20,4 +21,7 @@ def get_user_by_email():
     }
 
     return jsonify(user_data), 200
+
+
+
 
