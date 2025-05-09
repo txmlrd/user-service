@@ -58,7 +58,9 @@ def update_profile():
         }), 200
     except:
         db.session.rollback()
-        return "Failed to update profile", 500
+        return jsonify({
+            "error": "Failed to update profile"
+        }), 500
 
 
 @user_bp.route('/delete/<int:id>', methods=['DELETE'])

@@ -20,10 +20,10 @@ def register():
     face_references = request.files.getlist('face_reference')
 
     if not name or not email or not password or not phone or len(face_references) != 3:
-        return "All fields are required and exactly 3 face images must be provided", 400
+        return jsonify({"msg"  "All fields are required and exactly 3 face images must be provided"}), 400
 
     if User.query.filter_by(email=email).first():
-        return "Email already registered", 409
+        return jsonify({"msg": "Email already registered"}), 409
 
     # Hash password
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -63,7 +63,7 @@ def register():
 
     except requests.exceptions.RequestException as e:
         # Jika gagal menghubungi user service
-        return jsonify({"error": "User Service unavailabledock", "details": str(e)}), 503
+        return jsonify({"error": "User Service unavailable", "details": str(e)}), 503
 
 
 # Confirm Email
@@ -72,75 +72,75 @@ def confirm_email(token):
     try:
         email = get_serializer().loads(token, salt='email-confirm', max_age=3600)
     except Exception:
-        return "Invalid or expired token", 400
+        return jsonify({"msg": "Invalid or expired token"}), 400
 
     user = User.query.filter_by(email=email).first_or_404()
 
     if user.is_verified:
-        return "Account already verified", 200
+        return jsonify({"msg": "Email already verified"}), 400
     user.is_verified = 1
     db.session.commit()
-    return "Account verified successfully", 200
+    return jsonify({"msg": "Email verified successfully"}), 200
 
-# Login
-@auth_bp.route('/login', methods=['POST'])
-def login():
-    data = request.form
-    email, password = data.get('email'), data.get('password')
+# # Login
+# @auth_bp.route('/login', methods=['POST'])
+# def login():
+#     data = request.form
+#     email, password = data.get('email'), data.get('password')
 
-    user = User.query.filter_by(email=email).first()
+#     user = User.query.filter_by(email=email).first()
 
-    if user and bcrypt.check_password_hash(user.password, password):
-        if not user.is_verified:
-            return "Please verify your email before logging in.", 401
-        access_token = create_access_token(identity=str(user.id))
-        return jsonify(access_token=access_token), 200
-    return "Invalid credentials", 401
+#     if user and bcrypt.check_password_hash(user.password, password):
+#         if not user.is_verified:
+#             return "Please verify your email before logging in.", 401
+#         access_token = create_access_token(identity=str(user.id))
+#         return jsonify(access_token=access_token), 200
+#     return "Invalid credentials", 401
 
-@auth_bp.route('/login/face', methods=['POST'])
-def login_face():
-    data = request.form
-    email = data.get('email')
-    face = request.files.get('face_image')
+# @auth_bp.route('/login/face', methods=['POST'])
+# def login_face():
+#     data = request.form
+#     email = data.get('email')
+#     face = request.files.get('face_image')
     
-    if not email or not face:
-        return "All fields are required", 400
+#     if not email or not face:
+#         return "All fields are required", 400
 
-    # Cari user berdasarkan username atau email
-    user = User.query.filter((User.email == email)).first()
-    if not user:
-        return "User not found", 404
+#     # Cari user berdasarkan username atau email
+#     user = User.query.filter((User.email == email)).first()
+#     if not user:
+#         return "User not found", 404
 
-    user_id = user.id
+#     user_id = user.id
 
-    # Kirim ke Face Recognition Service
-    filename = secure_filename(face.filename)
-    files = {'image': (filename, face.stream, face.mimetype)}
-    payload = {'user_id': user_id}
+#     # Kirim ke Face Recognition Service
+#     filename = secure_filename(face.filename)
+#     files = {'image': (filename, face.stream, face.mimetype)}
+#     payload = {'user_id': user_id}
     
-    try:
-        response = requests.post("http://face-recognition:5000/verify", data=payload, files=files)
+#     try:
+#         response = requests.post("http://face-recognition:5000/verify", data=payload, files=files)
         
-        if response.status_code == 200:
-            access_token = create_access_token(identity=str(user_id))
-            return jsonify(access_token=access_token), 200
-        else:
-            return jsonify({"error": "Face recognition failed", "details": response.json()}), 401
+#         if response.status_code == 200:
+#             access_token = create_access_token(identity=str(user_id))
+#             return jsonify(access_token=access_token), 200
+#         else:
+#             return jsonify({"error": "Face recognition failed", "details": response.json()}), 401
 
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": "Face Recognition Service unavailable", "details": str(e)}), 503
+#     except requests.exceptions.RequestException as e:
+#         return jsonify({"error": "Face Recognition Service unavailable", "details": str(e)}), 503
 
 
-# Logout
-@auth_bp.route('/logout', methods=['GET'])
-@jwt_required() 
-# @check_device_token
-def logout():
-    try :
-        user = get_jwt_identity()
-        return jsonify({"user_id": user}), 200
-    except Exception as e:
-        return jsonify({"msg": "Token is invalid"}), 401
+# # Logout
+# @auth_bp.route('/logout', methods=['GET'])
+# @jwt_required() 
+# # @check_device_token
+# def logout():
+#     try :
+#         user = get_jwt_identity()
+#         return jsonify({"user_id": user}), 200
+#     except Exception as e:
+#         return jsonify({"msg": "Token is invalid"}), 401
     
     
 # Forgot Password
@@ -150,7 +150,7 @@ def forgot_password():
     user = User.query.filter_by(email=email).first()
 
     if user is None:
-        return "Email not found", 404
+        return jsonify({"msg": "Email not found"}), 404
 
     token = get_serializer().dumps(email, salt='password-reset')
     reset_url = url_for('auth.reset_password', token=token, _external=True)
