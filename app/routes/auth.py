@@ -6,7 +6,6 @@ from app.utils.serializer import get_serializer
 from app.models.password_reset import PasswordReset
 from datetime import datetime, timedelta
 import requests
-from config import Config
 from werkzeug.utils import secure_filename
 # from app.security.redis_handler import blacklist_token
 # from app.security.check_device import check_device_token
@@ -15,12 +14,12 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.form
-    name, email, password = data.get('name'), data.get('email'), data.get('password')
+    name, email, password, phone = data.get('name'), data.get('email'), data.get('password'), data.get('phone')
     
     # Ambil face_reference yang merupakan file gambar
     face_references = request.files.getlist('face_reference')
 
-    if not name or not email or not password or len(face_references) != 3:
+    if not name or not email or not password or not phone or len(face_references) != 3:
         return "All fields are required and exactly 3 face images must be provided", 400
 
     if User.query.filter_by(email=email).first():
@@ -30,7 +29,7 @@ def register():
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
     # Menambahkan user baru ke database
-    new_user = User(name=name, email=email, password=hashed_password)
+    new_user = User(name=name, email=email, password=hashed_password, phone=phone)
     db.session.add(new_user)
     db.session.commit()
     
@@ -97,6 +96,40 @@ def login():
         access_token = create_access_token(identity=str(user.id))
         return jsonify(access_token=access_token), 200
     return "Invalid credentials", 401
+
+@auth_bp.route('/login/face', methods=['POST'])
+def login_face():
+    data = request.form
+    email = data.get('email')
+    face = request.files.get('face_image')
+    
+    if not email or not face:
+        return "All fields are required", 400
+
+    # Cari user berdasarkan username atau email
+    user = User.query.filter((User.email == email)).first()
+    if not user:
+        return "User not found", 404
+
+    user_id = user.id
+
+    # Kirim ke Face Recognition Service
+    filename = secure_filename(face.filename)
+    files = {'image': (filename, face.stream, face.mimetype)}
+    payload = {'user_id': user_id}
+    
+    try:
+        response = requests.post("http://face-recognition:5000/verify", data=payload, files=files)
+        
+        if response.status_code == 200:
+            access_token = create_access_token(identity=str(user_id))
+            return jsonify(access_token=access_token), 200
+        else:
+            return jsonify({"error": "Face recognition failed", "details": response.json()}), 401
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": "Face Recognition Service unavailable", "details": str(e)}), 503
+
 
 # Logout
 @auth_bp.route('/logout', methods=['GET'])
