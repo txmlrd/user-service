@@ -65,6 +65,40 @@ def update_profile():
         return jsonify({
             "error": "Failed to update profile"
         }), 500
+        
+@user_bp.route('/update/email', methods=['POST'])
+@jwt_required()
+# @check_device_token
+def update_email():
+    current_user_id = get_jwt_identity()
+    
+    user = User.query.get(current_user_id)
+    data = request.form
+    user.email = data.get('email', user.email)
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "Email updated successfully",
+            "user": {
+                "id": user.id,
+                "uuid": user.uuid,
+                "name": user.name,
+                "phone": user.phone,
+                "profile_picture": user.profile_picture,
+                "face_model_preference": user.face_model_preference,
+                "email": user.email,
+                "role_id": user.role_id,
+                "is_verified": user.is_verified,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at
+            }
+        }), 200
+    except:
+        db.session.rollback()
+        return jsonify({
+            "error": "Failed to update email"
+        }), 500
 
 
 @user_bp.route('/delete/<int:id>', methods=['DELETE'])
