@@ -17,6 +17,7 @@ def get_user_by_email():
         "id": user.id,
         "password": user.password,
         "email": user.email,
+        "face_model_preference": user.face_model_preference,
         "is_verified": user.is_verified,
     }
 

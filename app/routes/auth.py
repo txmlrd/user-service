@@ -8,8 +8,7 @@ from datetime import datetime, timedelta
 import requests
 from werkzeug.utils import secure_filename
 from app.functions.get_user_requests_password import get_user_request_password
-# from app.security.redis_handler import blacklist_token
-# from app.security.check_device import check_device_token
+from app.config import Config
 
 auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/register', methods=['POST'])
@@ -46,7 +45,7 @@ def register():
 
 
     try:
-        response = requests.post("http://face-recognition:5000/upload-face", data=data, files=files)
+        response = requests.post(f"{Config.AUTH_SERVICE_URL}/upload-face", data=data, files=files)
 
         # Cek response dari API /upload-face
         if response.status_code == 200:
