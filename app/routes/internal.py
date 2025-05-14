@@ -20,6 +20,28 @@ def get_user_by_email():
         "face_model_preference": user.face_model_preference,
         "is_verified": user.is_verified,
         "role_id": user.role_id,
+        "uuid": user.uuid,
+    }
+
+    return jsonify(user_data), 200
+
+@internal_bp.route('/user-by-id', methods=['GET'])
+def get_user_by_id():
+    user_id = request.args.get('id')
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400
+
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user_data = {
+        "id": user.id,
+        "password": user.password,
+        "email": user.email,
+        "face_model_preference": user.face_model_preference,
+        "is_verified": user.is_verified,
+        "role_id": user.role_id,
     }
 
     return jsonify(user_data), 200
