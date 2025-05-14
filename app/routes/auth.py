@@ -24,6 +24,9 @@ def register():
 
     if User.query.filter_by(email=email).first():
         return jsonify({"msg": "Email already registered"}), 409
+    
+    if User.query.filter_by(phone=phone).first():
+        return jsonify({"msg": "Phone number already registered"}), 409
 
     # Hash password
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -33,7 +36,7 @@ def register():
     db.session.add(new_user)
     db.session.commit()
     
-    user_id = new_user.id
+    uuid = new_user.uuid
 
     # Dapatkan user_id dari user yang baru saja didaftarkan
     files = []
@@ -41,7 +44,7 @@ def register():
         filename = secure_filename(face.filename)
         files.append(('images', (filename, face, face.mimetype)))
 
-    data = {'user_id': user_id}
+    data = {'uuid': uuid}
 
 
     try:
@@ -84,7 +87,7 @@ def confirm_email(token):
     
 @auth_bp.route('/reset-password/request', methods=['POST'])
 def forgot_password():
-    email = request.form.get('email')
+    email = request.get_json().get('email')
     user = User.query.filter_by(email=email).first()
 
     if user is None:

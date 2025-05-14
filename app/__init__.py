@@ -4,6 +4,7 @@ from .config import Config
 from .routes.auth import auth_bp
 from .routes.user import user_bp
 from .routes.internal import internal_bp
+from .routes.admin import admin_bp
 from .models.user import User
 from .models.password_reset import PasswordReset
 
@@ -25,6 +26,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(internal_bp, url_prefix='/internal')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
     @app.route('/')
     def index():

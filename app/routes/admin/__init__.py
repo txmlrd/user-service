@@ -1,0 +1,109 @@
+from flask import Blueprint, request, jsonify, url_for, render_template
+from app.models.user import User
+from app.extensions import db, bcrypt, create_access_token, jwt_required, get_jwt_identity
+from app.utils.mailer import send_email
+from app.utils.serializer import get_serializer
+from app.models.password_reset import PasswordReset
+from datetime import datetime, timedelta
+import requests
+from werkzeug.utils import secure_filename
+from app.config import Config
+
+admin_bp = Blueprint('admin', __name__)
+
+@admin_bp.route('/get-user', methods=['GET'])
+@jwt_required()
+def get_all_user():
+    role_id = request.args.get('role_id', type=int)
+
+    query = User.query
+    if role_id is not None:
+        query = query.filter_by(role_id=role_id)
+
+    users = query.all()
+    user_list = []
+    for user in users:
+        user_list.append({
+            "id": user.id,
+            "uuid": user.uuid,
+            "name": user.name,
+            "phone": user.phone,
+            "profile_picture": user.profile_picture,
+            "email": user.email,
+            "role_id": user.role_id,
+            "is_verified": user.is_verified,
+            "face_model_preference": user.face_model_preference,
+            "created_at": user.created_at.isoformat(),
+            "updated_at": user.updated_at.isoformat()
+        })
+
+    return jsonify(user_list), 200
+
+@admin_bp.route('/search-user', methods=['GET'])
+@jwt_required()
+def search_user():
+    name = request.args.get('name', type=str)
+    role_id = request.args.get('role_id', type=int)
+    user_id = request.args.get('id', type=int)
+
+    query = User.query
+
+    if user_id:
+        query = query.filter_by(id=user_id)
+
+    if name:
+        query = query.filter(User.name.ilike(f"%{name}%"))
+
+    if role_id:
+        query = query.filter_by(role_id=role_id)
+
+    users = query.all()
+    user_list = []
+    for user in users:
+        user_list.append({
+            "id": user.id,
+            "uuid": user.uuid,
+            "name": user.name,
+            "phone": user.phone,
+            "profile_picture": user.profile_picture,
+            "email": user.email,
+            "role_id": user.role_id,
+            "is_verified": user.is_verified,
+            "face_model_preference": user.face_model_preference,
+            "created_at": user.created_at.isoformat(),
+            "updated_at": user.updated_at.isoformat()
+        })
+
+    return jsonify(user_list), 200
+
+@admin_bp.route('/modify-role', methods=['POST'])
+@jwt_required()
+def modify_role():
+    data = request.get_json()
+    uuid = data.get('uuid')
+    new_role_id = data.get('role_id')
+
+    user = User.query.filter_by(uuid=uuid).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    user.role_id = new_role_id
+    db.session.commit()
+
+    return jsonify({"msg": f"User {uuid} role updated successfully"}), 200
+  
+@admin_bp.route('/delete-user', methods=['POST'])
+@jwt_required()
+def delete_user():
+    data = request.get_json()
+    uuid = data.get('uuid')
+
+    user = User.query.filter_by(uuid=uuid).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({"msg": f"User {uuid} deleted successfully"}), 200
+
