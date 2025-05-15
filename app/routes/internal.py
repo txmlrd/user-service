@@ -42,6 +42,7 @@ def get_user_by_id():
         "face_model_preference": user.face_model_preference,
         "is_verified": user.is_verified,
         "role_id": user.role_id,
+        "uuid": user.uuid
     }
 
     return jsonify(user_data), 200

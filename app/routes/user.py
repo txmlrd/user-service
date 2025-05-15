@@ -1,4 +1,4 @@
-from flask import Blueprint, session, jsonify, request, url_for
+from flask import Blueprint, session, jsonify, request, url_for, send_file, current_app
 from app.models.user import User
 from app.extensions import jwt_required, get_jwt_identity
 from app import db
@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 from app.config import Config
 from app.utils.serializer import get_serializer
 from app.utils.mailer import send_email
+import os
 
 user_bp = Blueprint('user', __name__)
 
@@ -221,3 +222,50 @@ def update_face_model_preference():
         return jsonify({
             "error": "Failed to update face model preference"
         }), 500
+
+@user_bp.route('/update/profile-picture', methods=['POST'])
+@jwt_required()
+def update_profile_picture():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    profile_picture = request.files.get('profile_picture')
+    if not profile_picture:
+        return jsonify({"error": "No profile picture provided"}), 400
+
+    # Validasi ekstensi file
+    filename = secure_filename(profile_picture.filename)
+    ext = os.path.splitext(filename)[-1].lower()
+    if ext not in ['.jpg', '.jpeg']:
+        return jsonify({"error": "Only .jpg files are allowed"}), 400
+
+    try:
+        # Buat folder jika belum ada
+        save_dir = os.path.join("storage", "user_profile_pictures")
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Simpan dengan nama UUID.jpg
+        save_path = os.path.join(save_dir, f"{user.uuid}.jpg")
+        profile_picture.save(save_path)
+
+        # Update path di database
+        user.profile_picture = save_path
+        db.session.commit()
+
+        return jsonify({"message": "Profile picture updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Failed to save profile picture", "details": str(e)}), 500
+    
+@user_bp.route('/profile-picture/<uuid>', methods=['GET'])
+def serve_profile_picture(uuid):
+    file_path = os.path.join('/app/storage/user_profile_pictures', f"{uuid}.jpg")
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return send_file(file_path, mimetype='image/jpeg')
+    return jsonify({"error": "Profile picture not found"}), 404
+
+
+
+    
