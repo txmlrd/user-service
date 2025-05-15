@@ -92,12 +92,9 @@ def modify_role():
 
     return jsonify({"msg": f"User {uuid} role updated successfully"}), 200
   
-@admin_bp.route('/delete-user', methods=['POST'])
+@admin_bp.route('/delete-user/<uuid>', methods=['DELETE'])
 @jwt_required()
-def delete_user():
-    data = request.get_json()
-    uuid = data.get('uuid')
-
+def delete_user(uuid):
     user = User.query.filter_by(uuid=uuid).first()
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -106,4 +103,5 @@ def delete_user():
     db.session.commit()
 
     return jsonify({"msg": f"User {uuid} deleted successfully"}), 200
+
 

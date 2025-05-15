@@ -93,7 +93,7 @@ def forgot_password():
     if user is None:
         return jsonify({"msg": "Email not found"}), 404
 
-    check_token, status = get_user_request_password(user.id)
+    check_token, status = get_user_request_password(user.uuid)
     
     if status == 200:
         minutes_left = int((check_token.expires_at - datetime.utcnow()).total_seconds()) // 60
@@ -112,7 +112,7 @@ def forgot_password():
 
     now = datetime.utcnow()
     save_token = PasswordReset(
-        user_id=user.id,
+        uuid=user.uuid,
         token=token,
         created_at=now,
         expires_at=now + timedelta(minutes=15),

@@ -2,14 +2,14 @@ from app.models.password_reset import PasswordReset
 from datetime import datetime
 from sqlalchemy import desc
 
-def get_user_request_password(user_id):
-    if not user_id:
+def get_user_request_password(uuid: str):
+    if not uuid:
         return None, 400
 
     now = datetime.utcnow()
     token = (
         PasswordReset.query
-        .filter_by(user_id=user_id, is_reset=False)
+        .filter_by(uuid=uuid, is_reset=False)
         .filter(PasswordReset.expires_at > now)
         .order_by(desc(PasswordReset.created_at)) 
         .first()
