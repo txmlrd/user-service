@@ -174,7 +174,7 @@ def update_face_reference():
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
-    user_id = user.id
+    uuid = user.uuid
     face_references = request.files.getlist('images')
     if not face_references:
         return jsonify({"error": "No face references provided"}), 400
@@ -182,7 +182,7 @@ def update_face_reference():
     for face in face_references:
         filename = secure_filename(face.filename)
         files.append(('images', (filename, face, face.mimetype)))
-    data = {'user_id': user_id}
+    data = {'uuid': uuid}
     try:
         response = requests.post(f"{Config.AUTH_SERVICE_URL}/upload-face", data=data, files=files)
         # Cek response dari API /upload-face
