@@ -26,5 +26,6 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES = int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES')) 
     
     AUTH_SERVICE_URL = os.environ.get('AUTH_SERVICE_URL') 
+    API_GATEWAY_URL = os.environ.get('API_GATEWAY_URL')
     
     # REDIS_URL = os.environ.get('REDIS_URL')

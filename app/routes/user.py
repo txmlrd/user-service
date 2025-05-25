@@ -89,8 +89,7 @@ def update_email():
     # Token berisi user_id dan email baru
     token_data = {'user_id': user.id, 'new_email': new_email}
     token = get_serializer().dumps(token_data, salt='email-change')
-
-    confirm_url = url_for('user.change_email', token=token, _external=True)
+    confirm_url = f"{Config.API_GATEWAY_URL}/user/update/email/confirm/{token}"
 
     # 1. Kirim link ke email lama
     send_email(

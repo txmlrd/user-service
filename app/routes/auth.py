@@ -20,7 +20,7 @@ def register():
     face_references = request.files.getlist('face_reference')
 
     if not name or not email or not password or not phone or len(face_references) != 3:
-        return jsonify({"msg"  "All fields are required and exactly 3 face images must be provided"}), 400
+        return jsonify({"msg": "All fields are required and exactly 3 face images must be provided"}), 400
 
     if User.query.filter_by(email=email).first():
         return jsonify({"msg": "Email already registered"}), 409
@@ -54,7 +54,8 @@ def register():
         if response.status_code == 200:
             # Jika upload face references berhasil, kirimkan token konfirmasi email
             token = get_serializer().dumps(email, salt='email-confirm')
-            confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+            # confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+            confirm_url = f"{Config.API_GATEWAY_URL}/user/verify-email/{token}"
             html = render_template('email_confirmation.html', name=name, confirm_url=confirm_url)
             send_email('Confirm Your Email', email, html=html)
 
@@ -107,7 +108,8 @@ def forgot_password():
 
     # Token expired atau tidak ditemukan → buat baru
     token = get_serializer().dumps(email, salt='password-reset')
-    reset_url = url_for('auth.reset_password', token=token, _external=True)
+    reset_url = f"{Config.API_GATEWAY_URL}/user/reset-password/confirm/{token}"
+    # reset_url = url_for('auth.reset_password', token=token, _external=True)
     send_email('Reset Your Password', email, body=f'Klik link berikut untuk reset password: {reset_url}')
 
     now = datetime.utcnow()
