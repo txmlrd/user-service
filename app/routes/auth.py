@@ -98,13 +98,13 @@ def forgot_password():
     
     if status == 200:
         minutes_left = int((check_token.expires_at - datetime.utcnow()).total_seconds()) // 60
-        reset_url = url_for('auth.reset_password', token=check_token.token, _external=True)
+        reset_url = f"{Config.API_GATEWAY_URL}/user/reset-password/confirm/{check_token.token}"
         send_email(
             'Reset Your Password',
             email,
             body=f'Link masih berlaku sekitar {minutes_left} menit.\nKlik link berikut untuk reset password: {reset_url}'
         )
-        return jsonify({"msg": "Reset password link resent, please check your email!"}), 200
+        return jsonify({"msg": "Reset password link resent, please check your email!", "reset_url" : reset_url}), 200
 
     # Token expired atau tidak ditemukan → buat baru
     token = get_serializer().dumps(email, salt='password-reset')
@@ -123,7 +123,7 @@ def forgot_password():
     db.session.add(save_token)
     db.session.commit()
 
-    return jsonify({"msg": "Reset password request success, please check your email!"}), 200
+    return jsonify({"msg": "Reset password request success, please check your email!", "reset_url" : reset_url}), 200
 
 
 @auth_bp.route('/reset-password/confirm/<token>', methods=['GET', 'POST'])
