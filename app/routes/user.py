@@ -258,12 +258,13 @@ def update_profile_picture():
     except Exception as e:
         return jsonify({"error": "Failed to save profile picture", "details": str(e)}), 500
     
-@user_bp.route('/profile-picture/<uuid>', methods=['GET'])
-def serve_profile_picture(uuid):
-    file_path = os.path.join('/app/storage/user_profile_pictures', f"{uuid}.jpg")
+@user_bp.route('/user_profile_pictures/<filename>', methods=['GET'])
+def serve_profile_picture(filename):
+    file_path = os.path.join('/app/storage/user_profile_pictures', filename)
     if os.path.exists(file_path) and os.path.isfile(file_path):
         return send_file(file_path, mimetype='image/jpeg')
     return jsonify({"error": "Profile picture not found"}), 404
+
 
 
 
