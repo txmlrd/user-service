@@ -37,7 +37,12 @@ def get_all_user():
             "updated_at": user.updated_at.isoformat()
         })
 
-    return jsonify(user_list), 200
+    return jsonify({
+        "status": "success",
+        "message": "User list retrieved successfully",
+        "data": user_list
+    }), 200
+
 
 @admin_bp.route('/search-user', methods=['GET'])
 @jwt_required()
@@ -74,7 +79,12 @@ def search_user():
             "updated_at": user.updated_at.isoformat()
         })
 
-    return jsonify(user_list), 200
+    return jsonify({
+        "status": "success",
+        "message": "User search completed successfully",
+        "data": user_list
+    }), 200
+
 
 @admin_bp.route('/modify-role', methods=['POST'])
 @jwt_required()
@@ -83,25 +93,50 @@ def modify_role():
     uuid = data.get('uuid')
     new_role_id = data.get('role_id')
 
+    if not uuid or new_role_id is None:
+        return jsonify({
+            "status": "failed",
+            "message": "UUID and role_id are required",
+            "data": None
+        }), 400
+
     user = User.query.filter_by(uuid=uuid).first()
     if not user:
-        return jsonify({"msg": "User not found"}), 404
+        return jsonify({
+            "status": "failed",
+            "message": "User not found",
+            "data": None
+        }), 404
 
     user.role_id = new_role_id
     db.session.commit()
 
-    return jsonify({"msg": f"User {uuid} role updated successfully"}), 200
-  
+    return jsonify({
+        "status": "success",
+        "message": f"User {uuid} role updated successfully",
+        "data": None
+    }), 200
+
+
 @admin_bp.route('/delete-user/<uuid>', methods=['DELETE'])
 @jwt_required()
 def delete_user(uuid):
     user = User.query.filter_by(uuid=uuid).first()
     if not user:
-        return jsonify({"msg": "User not found"}), 404
+        return jsonify({
+            "status": "failed",
+            "message": "User not found",
+            "data": None
+        }), 404
 
     db.session.delete(user)
     db.session.commit()
 
-    return jsonify({"msg": f"User {uuid} deleted successfully"}), 200
+    return jsonify({
+        "status": "success",
+        "message": f"User {uuid} deleted successfully",
+        "data": None
+    }), 200
+
 
 
