@@ -15,6 +15,36 @@ admin_bp = Blueprint('admin', __name__)
 @jwt_required()
 def get_all_user():
     role_id = request.args.get('role_id', type=int)
+    user_id = request.args.get('user_id', type=int)
+    
+    if user_id is not None:
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify({
+                "status": "failed",
+                "message": "User not found",
+                "data": None
+            }), 404
+
+        user_data = {
+            "id": user.id,
+            "uuid": user.uuid,
+            "name": user.name,
+            "phone": user.phone,
+            "profile_picture": user.profile_picture,
+            "email": user.email,
+            "role_id": user.role_id,
+            "is_verified": user.is_verified,
+            "face_model_preference": user.face_model_preference,
+            "created_at": user.created_at.isoformat(),
+            "updated_at": user.updated_at.isoformat()
+        }
+
+        return jsonify({
+            "status": "success",
+            "message": "User retrieved successfully",
+            "data": user_data
+        }), 200
 
     query = User.query
     if role_id is not None:
@@ -138,5 +168,32 @@ def delete_user(uuid):
         "data": None
     }), 200
 
+@admin_bp.route('/verify-email-user', methods=['POST'])
+@jwt_required()
+def verify_email_user():
+    data = request.get_json()
+    uuid = data.get('uuid')
 
+    if not uuid:
+        return jsonify({
+            "status": "failed",
+            "message": "UUID is required",
+            "data": None
+        }), 400
 
+    user = User.query.filter_by(uuid=uuid).first()
+    if not user:
+        return jsonify({
+            "status": "failed",
+            "message": "User not found",
+            "data": None
+        }), 404
+
+    user.is_verified = True
+    db.session.commit()
+
+    return jsonify({
+        "status": "success",
+        "message": f"User {uuid} email verified successfully",
+        "data": None
+    }), 200

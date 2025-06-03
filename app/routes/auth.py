@@ -123,7 +123,7 @@ def forgot_password():
     db.session.add(save_token)
     db.session.commit()
 
-    return jsonify({"msg": "Reset password request success, please check your email!", "reset_url" : reset_url}), 200
+    return jsonify({"msg": "Reset password request success, please check your email!"}), 200
 
 
 @auth_bp.route('/reset-password/confirm/<token>', methods=['GET', 'POST'])
