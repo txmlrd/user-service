@@ -194,6 +194,6 @@ def verify_email_user():
 
     return jsonify({
         "status": "success",
-        "message": f"User {uuid} email verified successfully",
+        "message": f"User email verified successfully",
         "data": None
     }), 200
