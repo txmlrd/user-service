@@ -14,62 +14,83 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.form
-    name, email, password, phone = data.get('name'), data.get('email'), data.get('password'), data.get('phone')
-    
-    # Ambil face_reference yang merupakan file gambar
-    face_references = request.files.getlist('face_reference')
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+    phone = data.get('phone')
 
-    if not name or not email or not password or not phone or len(face_references) != 3:
-        return jsonify({"msg": "All fields are required and exactly 3 face images must be provided"}), 400
+    face_references = [
+    face for face in request.files.getlist('face_reference')
+    if face and face.filename and face.stream.read()  # cek ada isi
+]
+# Kembalikan posisi pointer stream ke awal (wajib)
+    for face in face_references:
+        face.stream.seek(0)
+
+
+
+    # Validasi form
+    if not name or not email or not password or not phone:
+        return jsonify({"msg": "All fields are required"}), 400
 
     if User.query.filter_by(email=email).first():
         return jsonify({"msg": "Email already registered"}), 409
-    
+
     if User.query.filter_by(phone=phone).first():
         return jsonify({"msg": "Phone number already registered"}), 409
 
     # Hash password
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    
-    # Menambahkan user baru ke database
-    new_user = User(name=name, email=email, password=hashed_password, phone=phone)
-    db.session.add(new_user)
-    db.session.commit()
-    
-    uuid = new_user.uuid
-
-    # Dapatkan user_id dari user yang baru saja didaftarkan
-    files = []
-    for face in face_references:
-        filename = secure_filename(face.filename)
-        files.append(('images', (filename, face, face.mimetype)))
-
-    data = {'uuid': uuid}
-
 
     try:
-        response = requests.post(f"{Config.AUTH_SERVICE_URL}/upload-face", data=data, files=files)
+        # Buat user baru
+        new_user = User(name=name, email=email, password=hashed_password, phone=phone)
+        db.session.add(new_user)
+        db.session.flush()  # Dapatkan UUID sebelum commit
 
-        # Cek response dari API /upload-face
-        if response.status_code == 200:
-            # Jika upload face references berhasil, kirimkan token konfirmasi email
+        uuid = new_user.uuid
+
+        # Jika ada face_reference, kirim ke auth service
+        if face_references:
+            files = []
+            for face in face_references:
+                filename = secure_filename(face.filename)
+                files.append(('images', (filename, face, face.mimetype)))
+
+            upload_data = {'uuid': uuid}
+            try:
+                response = requests.post(f"{Config.AUTH_SERVICE_URL}/upload-face", data=upload_data, files=files)
+                if response.status_code != 200:
+                    db.session.rollback()
+                    return jsonify({"error": "Failed to upload face reference", "details": response.json()}), 500
+            except requests.exceptions.RequestException as e:
+                db.session.rollback()
+                return jsonify({"error": "Auth service unavailable", "details": str(e)}), 503
+
+        # Commit setelah semua sukses
+        db.session.commit()
+
+        # Kirim email konfirmasi
+        try:
             token = get_serializer().dumps(email, salt='email-confirm')
-            # confirm_url = url_for('auth.confirm_email', token=token, _external=True)
             confirm_url = f"{Config.API_GATEWAY_URL}/user/verify-email/{token}"
             html = render_template('email_confirmation.html', name=name, confirm_url=confirm_url)
             send_email('Confirm Your Email', email, html=html)
 
-            return jsonify({"message": "User registered and face reference uploaded, please check email"}), 201
-        else:
-            # Jika gagal upload face reference, rollback user yang baru dibuat
-            db.session.rollback()
-            return jsonify({"error": "Failed to upload face reference", "details": response.json()}), 500
+            msg = "User registered"
+            if face_references:
+                msg += " and face reference uploaded"
+            msg += ", please check email for confirmation"
 
-    except requests.exceptions.RequestException as e:
-        # Jika gagal menghubungi user service
-        return jsonify({"error": "User Service unavailable", "details": str(e)}), 503
+            return jsonify({"message": msg}), 201
 
+        except Exception as e:
+            return jsonify({"error": "Failed to send confirmation email", "details": str(e)}), 500
 
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Registration failed", "details": str(e)}), 500
+        
 # Confirm Email
 @auth_bp.route('/verify-email/<token>')
 def confirm_email(token):
