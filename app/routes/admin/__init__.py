@@ -3,7 +3,6 @@ from app.models.user import User
 from app.extensions import db, bcrypt, create_access_token, jwt_required, get_jwt_identity
 from app.utils.mailer import send_email
 from app.utils.serializer import get_serializer
-from app.models.password_reset import PasswordReset
 from datetime import datetime, timedelta
 import requests
 from werkzeug.utils import secure_filename

@@ -6,7 +6,6 @@ from .routes.user import user_bp
 from .routes.internal import internal_bp
 from .routes.admin import admin_bp
 from .models.user import User
-from .models.password_reset import PasswordReset
 
 
 def create_app():

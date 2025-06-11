@@ -1,6 +1,10 @@
 from app.models.user import User
-from app.models.password_reset import PasswordReset
 from flask import Blueprint, request, jsonify
+from app.extensions import db
+from dotenv import load_dotenv
+import os
+
+load_dotenv() 
 
 internal_bp = Blueprint('internal', __name__)
 @internal_bp.route('/user-by-email', methods=['GET'])
@@ -47,6 +51,24 @@ def get_user_by_id():
 
     return jsonify(user_data), 200
 
+@internal_bp.route('/users/<email>/password', methods=['PATCH'])
+def update_password(email):
+    auth_header = request.headers.get('Authorization')
+    if auth_header != f"Bearer {os.getenv('RESET_PASSWORD_SECRET')}":
+        return jsonify({"error": "Unauthorized"}), 400
+    data = request.get_json()
+    new_password = data.get("new_password")
+
+    if not new_password:
+        return jsonify({"error": "Missing new password"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 400
+
+    user.password = new_password
+    db.session.commit()
+    return jsonify({"message": "Password updated successfully"}), 200
 
 
 
