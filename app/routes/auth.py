@@ -95,15 +95,18 @@ def confirm_email(token):
     try:
         email = get_serializer().loads(token, salt='email-confirm', max_age=3600)
     except Exception:
-        return jsonify({"msg": "Invalid or expired token"}), 400
+        return render_template('email_verification_result.html', status='invalid')
 
     user = User.query.filter_by(email=email).first_or_404()
 
     if user.is_verified:
-        return jsonify({"msg": "Email already verified"}), 400
+        return render_template('email_verification_result.html', status='already_verified')
+
     user.is_verified = 1
     db.session.commit()
-    return jsonify({"msg": "Email verified successfully"}), 200
+    return render_template('email_verification_result.html', status='success')
+
+
     
 
 
