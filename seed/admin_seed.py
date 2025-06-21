@@ -26,7 +26,7 @@ with app.app_context():
             password=bcrypt.generate_password_hash(default_password).decode('utf-8'),
             role_id=1, 
             is_verified=True,
-            phone=12312312312
+            phone=08213213545
         )
         db.session.add(new_admin)
         db.session.commit()

@@ -11,8 +11,8 @@ class User(db.Model):
     phone = db.Column(db.String(20), unique=True, nullable=True) 
     profile_picture = db.Column(db.String(100), nullable=True) 
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)  # hashed password
-    role_id = db.Column(db.Integer, nullable=False, default=4)  # default role_id for guest
+    password = db.Column(db.String(100), nullable=False)  
+    role_id = db.Column(db.Integer, nullable=False, default=4) 
     is_verified = db.Column(db.Boolean, default=False)  
     face_model_preference = db.Column(db.Integer, nullable=True, default=1) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

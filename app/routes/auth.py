@@ -19,15 +19,11 @@ def register():
 
     face_references = [
     face for face in request.files.getlist('face_reference')
-    if face and face.filename and face.stream.read()  # cek ada isi
+    if face and face.filename and face.stream.read()  
 ]
-# Kembalikan posisi pointer stream ke awal (wajib)
     for face in face_references:
         face.stream.seek(0)
 
-
-
-    # Validasi form
     if not name or not email or not password or not phone:
         return jsonify({"msg": "All fields are required"}), 400
 
@@ -41,14 +37,11 @@ def register():
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     try:
-        # Buat user baru
         new_user = User(name=name, email=email, password=hashed_password, phone=phone)
         db.session.add(new_user)
-        db.session.flush()  # Dapatkan UUID sebelum commit
+        db.session.flush() 
 
         uuid = new_user.uuid
-
-        # Jika ada face_reference, kirim ke auth service
         if face_references:
             files = []
             for face in face_references:
@@ -65,10 +58,9 @@ def register():
                 db.session.rollback()
                 return jsonify({"error": "Auth service unavailable", "details": str(e)}), 503
 
-        # Commit setelah semua sukses
         db.session.commit()
 
-        # Kirim email konfirmasi
+        # mengirim email konfirmasi
         try:
             token = get_serializer().dumps(email, salt='email-confirm')
             confirm_url = f"{Config.API_GATEWAY_URL}/user/verify-email/{token}"
