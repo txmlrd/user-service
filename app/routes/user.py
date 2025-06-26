@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 from app.config import Config
 from app.utils.serializer import get_serializer
 from app.utils.mailer import send_email
+from flask import render_template
 import os
 
 user_bp = Blueprint('user', __name__)
@@ -39,14 +40,27 @@ def profile():
 # Update Profile
 @user_bp.route('/update', methods=['POST'])
 @jwt_required()
-# @check_device_token
 def update_profile():
     current_user_id = get_jwt_identity()
     
     user = User.query.get(current_user_id)
     data = request.get_json()
-    user.name = data.get('name', user.name)
-    user.phone = data.get('phone', user.phone)
+    new_name = data.get('name', user.name)
+    new_phone = data.get('phone', user.phone)
+    
+    if not isinstance(new_name, str) or new_name.strip() == "" or new_name.isdigit():
+        return jsonify({"error": "Name must be a valid string (not only numbers)"}), 400
+
+    if not isinstance(new_phone, str) or not new_phone.isdigit():
+        return jsonify({"error": "Phone must be numeric string"}), 400
+
+    with db.session.no_autoflush:
+        existing_user = User.query.filter(User.phone == new_phone, User.id != user.id).first()
+        if existing_user:
+            return jsonify({"error": "Phone already registered"}), 400
+
+    user.name = new_name
+    user.phone = new_phone
 
     try:
         db.session.commit()
@@ -86,19 +100,16 @@ def update_email():
     if User.query.filter_by(email=new_email).first():
         return jsonify({"msg": "Email ini sudah digunakan user lain"}), 400
 
-    # Token berisi user_id dan email baru
     token_data = {'user_id': user.id, 'new_email': new_email}
     token = get_serializer().dumps(token_data, salt='email-change')
     confirm_url = f"{Config.API_GATEWAY_URL}/user/update/email/confirm/{token}"
 
-    # 1. Kirim link ke email lama
     send_email(
         subject='Konfirmasi Pergantian Email',
         recipient=user.email,
         body=f'Klik link berikut untuk menyetujui pergantian email akunmu ke {new_email}:\n\n{confirm_url}'
     )
 
-    # 2. Kirim notifikasi ke email baru
     send_email(
         subject='Permintaan Pergantian Email',
         recipient=new_email,
@@ -117,40 +128,39 @@ def change_email(token):
         user_id = data['user_id']
         new_email = data['new_email']
     except Exception:
-        return jsonify({"msg": "Token tidak valid atau telah kedaluwarsa"}), 400
+        return render_template("email_change_failed.html", title="❌ Gagal Memperbarui Email ", reason="Token tidak valid atau telah kedaluwarsa."), 400
 
     user = User.query.get_or_404(user_id)
 
-    # Cek ulang agar tidak bentrok email
-    if User.query.filter_by(email=new_email).first():
-        return jsonify({"msg": "Email ini sudah digunakan oleh user lain"}), 400
+    # ✅ Cek apakah email sudah sama (link sudah pernah diklik)
+    if user.email == new_email:
+        return render_template("email_change_failed.html", title="❌ Email Sudah Pernah Diganti", reason="Token sudah pernah digunakan"), 200
 
     old_email = user.email
     user.email = new_email
     db.session.commit()
 
-    # 🔔 Kirim notifikasi ke email lama
+    # ✅ Kirim email hanya saat perubahan pertama kali
     send_email(
         subject='Email Akun Telah Diganti',
         recipient=old_email,
         body=f'Email akunmu telah berhasil diganti ke {new_email}.\n\nJika kamu tidak melakukan ini, segera hubungi admin.'
     )
 
-    # 🔔 Kirim notifikasi ke email baru
     send_email(
         subject='Selamat, Email Akun Telah Aktif',
         recipient=new_email,
         body=f'Email ini sekarang telah digunakan sebagai alamat akun kamu. Jika ini bukan kamu, segera hubungi admin.'
     )
 
-    return jsonify({"msg": "Email berhasil diperbarui dan notifikasi telah dikirim."}), 200
+    return render_template("email_change_success.html", email=new_email), 200
+
 
 
 
 
 @user_bp.route('/delete/<int:id>', methods=['DELETE'])
 @jwt_required()
-# @check_device_token
 def delete_profile(id):
     current_user_id = get_jwt_identity()
 
@@ -166,7 +176,6 @@ def delete_profile(id):
 
 @user_bp.route('/update/face-reference', methods=['POST'])
 @jwt_required()
-# @check_device_token
 def update_face_reference():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
@@ -184,18 +193,15 @@ def update_face_reference():
     data = {'uuid': uuid}
     try:
         response = requests.post(f"{Config.AUTH_SERVICE_URL}/upload-face", data=data, files=files)
-        # Cek response dari API /upload-face
         if response.status_code == 200:
             return jsonify({"message": "Face reference updated successfully"}), 200
         else:
             return jsonify({"error": "Failed to upload face reference", "details": response.json()}), 500
     except requests.exceptions.RequestException as e:
-        # Jika gagal menghubungi user service
         return jsonify({"error": "User Service unavailable", "details": str(e)}), 503
     
 @user_bp.route('/update/face-model-preference', methods=['POST'])
 @jwt_required()
-# @check_device_token
 def update_face_model_preference():
     current_user_id = get_jwt_identity()
     user = User.query.get(int(current_user_id))

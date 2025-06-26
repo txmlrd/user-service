@@ -51,6 +51,28 @@ def get_user_by_id():
 
     return jsonify(user_data), 200
 
+@internal_bp.route('/user-by-uuid', methods=['GET'])
+def get_user_by_uuid():
+    uuid = request.args.get('uuid')
+    if not uuid:
+        return jsonify({"error": "UUID is required"}), 400
+
+    user = User.query.filter_by(uuid=uuid).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user_data = {
+        "id": user.id,
+        "password": user.password,
+        "email": user.email,
+        "face_model_preference": user.face_model_preference,
+        "is_verified": user.is_verified,
+        "role_id": user.role_id,
+        "uuid": user.uuid
+    }
+
+    return jsonify(user_data), 200
+
 @internal_bp.route('/users/<email>/password', methods=['PATCH'])
 def update_password(email):
     auth_header = request.headers.get('Authorization')
