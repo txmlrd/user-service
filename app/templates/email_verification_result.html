@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verifikasi Email</title>
+    <script>
+      function openApp() {
+        window.location.href = "teamedu://login?verified=true";
+        setTimeout(() => {
+          if (!document.hidden) {
+            window.location.href = "https://team-edu.vercel.app/login?verified=true";
+          }
+        }, 2000);
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="bg-white shadow-xl rounded-2xl p-8 max-w-md text-center">
+      {% if status == 'success' %}
+      <h2 class="text-2xl font-semibold text-green-600 mb-4">Email kamu berhasil diverifikasi!</h2>
+      <button onclick="openApp()" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-xl transition">Buka Aplikasi</button>
+      {% elif status == 'already_verified' %}
+      <h2 class="text-2xl font-semibold text-blue-600 mb-4">Email kamu sudah diverifikasi sebelumnya.</h2>
+      <button onclick="openApp()" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-xl transition">Buka Aplikasi</button>
+      {% else %}
+      <h2 class="text-2xl font-semibold text-red-600 mb-4">Link verifikasi tidak valid atau sudah kedaluwarsa.</h2>
+      <a href="https://team-edu.vercel.app/login" class="mt-4 inline-block bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-xl transition"> Kembali ke Login </a>
+      {% endif %}
+    </div>
+  </body>
+</html>
